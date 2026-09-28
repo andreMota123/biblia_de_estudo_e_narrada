@@ -48,6 +48,9 @@ docker save biblia-origens:3 | gzip -1 | ssh usuario@ip-da-vps 'gunzip | docker 
 ```bash
 rsync -a public/narracao/ usuario@ip-da-vps:/opt/biblia/narracao/
 rsync -a public/commentary/matthew-henry/ usuario@ip-da-vps:/opt/biblia/comentario/
+
+# pasta onde o app guarda o áudio do comentário (o container roda como uid 1000)
+ssh usuario@ip-da-vps 'mkdir -p /opt/biblia/audio-comentario && chown 1000:1000 /opt/biblia/audio-comentario'
 ```
 
 Enquanto o comentário está sendo traduzido, `scripts/sincronizar-comentario.sh`

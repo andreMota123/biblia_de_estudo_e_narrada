@@ -36,6 +36,8 @@ biblia_de_estudo_e_narrada/
 │   │   └── AuthNotice.tsx            aviso "faça login para…"
 │   │
 │   ├── lib/
+│   │   ├── commentarySpeech.ts     ★ prepara o comentário para a fala: "Rm 4.11" → "Romanos 4, 11",
+│   │   │                             "II." → "Segundo:"
 │   │   ├── readingFonts.ts         ★ tamanho e fonte da letra da leitura (7 fontes, 14–30 px)
 │   │   ├── useBibleAudio.ts        ★ o motor da narração: toca o MP3 do capítulo, lê o JSON de tempos para
 │   │   │                             saber o versículo atual, pula versículos, avança capítulos, controles da
@@ -55,6 +57,10 @@ biblia_de_estudo_e_narrada/
 │   │   ├── studyBlocks.ts            formato dos blocos do caderno de estudo
 │   │   ├── format.ts                 formatação de transliteração
 │   │   └── icons.tsx                 ícones SVG — ★ fones, play/pausa, anterior/próximo, lua, olho
+│   │
+│   ├── api/comentario-audio/
+│   │   └── route.ts                ★ narra um bloco do comentário sob demanda (voz Antonio, edge-tts na imagem),
+│   │                                 em pedaços paralelos; guarda o MP3 e responde a Range (iPhone)
 │   │
 │   ├── api/translate-commentary/
 │   │   └── route.ts                  tradução sob demanda de um bloco do comentário (API da Anthropic, com
@@ -138,5 +144,6 @@ ReadView  "Ouvir capítulo" ──▶ page.tsx: audio.play({livro, cap, vers})
 | Texto bíblico | `data/bible/bible.json` (no build) | `scripts/import-bible.js` |
 | Narração | `public/narracao/` → volume `/opt/biblia/narracao` | `scripts/gerar-narracao.py` |
 | Comentário (EN + PT) | `public/commentary/` → volume `/opt/biblia/comentario` | `scripts/traduzir-comentario.py` |
+| Áudio do comentário | volume `/opt/biblia/audio-comentario` (gerado na 1ª vez que é ouvido) | `app/api/comentario-audio` |
 | Favoritos, destaques, estudos, notas | Supabase: `biblia_verse_notes`, `biblia_word_notes` | o app, por usuário (RLS) |
 | Posição de leitura e de áudio, tema, velocidade, tamanho e fonte da letra | `localStorage` do navegador | o app |

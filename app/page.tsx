@@ -522,6 +522,10 @@ export default function BibliaOrigensApp() {
             onListenFrom={listenFrom}
             reading={reading}
             onReadingChange={setReading}
+            onCommentaryAudioStart={() => {
+              if (audio.status === "playing" || audio.status === "loading") audio.pause();
+            }}
+            narrationRate={audio.settings.rate}
           />
         )}
 

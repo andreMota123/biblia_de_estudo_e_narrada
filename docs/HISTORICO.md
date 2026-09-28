@@ -72,7 +72,21 @@ toda vez que abrir.
 - Ordem: Novo Testamento, Salmos e Provérbios, depois o resto do Antigo
   Testamento. ~29 h de GPU no total; o processo é retomável.
 
-## 5. Publicação na VPS
+## 5. Ouvir o comentário
+
+- Botão **"Ouvir comentário"** no painel do comentário (só nos blocos já
+  traduzidos). Ao tocar, a narração da Bíblia pausa.
+- **Sob demanda:** o comentário inteiro daria ~614 h de áudio (~17 GB), então
+  cada bloco é narrado só na primeira vez que alguém o ouve, pelo próprio
+  servidor (`app/api/comentario-audio`), e o MP3 fica guardado. Primeira vez:
+  de 15 s a 1 min; depois, na hora.
+- O texto é dividido em pedaços narrados em paralelo e emendados (61 s → 24 s
+  no bloco de Mateus 1.1-17, de 16 min).
+- Antes da fala, as referências viram forma falada ("Rm 4.11" → "Romanos 4,
+  11") e os tópicos em algarismos romanos viram "Primeiro:", "Segundo:".
+- A rota responde a pedidos com *Range*, que o Safari do iPhone exige.
+
+## 6. Publicação na VPS
 
 - Imagem Docker (`deploy/Dockerfile`, Next.js *standalone*) montada no
   computador local e carregada na VPS, para não gastar a memória do servidor.
@@ -83,7 +97,7 @@ toda vez que abrir.
   fechado (só a conta do dono).
 - Detalhes em [`deploy/IMPLANTACAO.md`](../deploy/IMPLANTACAO.md).
 
-## 6. Correções no projeto original
+## 7. Correções no projeto original
 
 - `supabase/schema.sql` não criava a coluna `highlight_color` nem a tabela de
   cache de traduções que o código já usava.

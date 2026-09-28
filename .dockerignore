@@ -4,3 +4,4 @@ node_modules
 public/narracao
 data/bible/biblia-livre.zip
 .env*
+.cache

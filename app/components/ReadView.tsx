@@ -54,6 +54,9 @@ type ReadViewProps = {
   onListenFrom: (verse: number) => void;
   reading: ReadingSettings;
   onReadingChange: (s: ReadingSettings) => void;
+  // Ao começar a ouvir um comentário, a narração da Bíblia pausa.
+  onCommentaryAudioStart: () => void;
+  narrationRate: number;
 };
 
 function refLabel(o: Occurrence): string {
@@ -88,7 +91,11 @@ export default function ReadView({
   onListenFrom,
   reading,
   onReadingChange,
+  onCommentaryAudioStart,
+  narrationRate,
 }: ReadViewProps) {
+  // Áudio do comentário: qual bloco foi pedido e em que estado está.
+  const [commentaryAudio, setCommentaryAudio] = useState<{ key: string; state: "loading" | "ready" | "error" } | null>(null);
   const [showReadingPanel, setShowReadingPanel] = useState(false);
   const readingFamily = fontFamilyOf(reading.font);
   const verseStyle = { fontSize: `${reading.fontSize}px`, fontFamily: readingFamily, lineHeight: 1.7 };
@@ -370,6 +377,61 @@ export default function ReadView({
                         <span className="ml-2 normal-case font-normal text-[var(--text-dim)]">(tradução automática)</span>
                       )}
                     </p>
+                    {block.t_pt && (() => {
+                      const audioKey = `${selectedBook}-${selectedChapter}-${block.s}`;
+                      const active = commentaryAudio?.key === audioKey ? commentaryAudio : null;
+                      const src = `/api/comentario-audio?livro=${encodeURIComponent(selectedBook)}&cap=${selectedChapter}&s=${block.s}`;
+                      return (
+                        <div className="mb-3 p-2.5 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)]/60">
+                          {!active ? (
+                            <button
+                              onClick={() => {
+                                onCommentaryAudioStart();
+                                setCommentaryAudio({ key: audioKey, state: "loading" });
+                              }}
+                              className="flex items-center gap-1.5 text-xs font-semibold text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] px-3 py-1.5 rounded-lg"
+                            >
+                              <HeadphonesIcon /> Ouvir comentário
+                            </button>
+                          ) : (
+                            <div className="space-y-1.5">
+                              {active.state === "loading" && (
+                                <p className="text-[10px] text-[var(--text-muted)]">
+                                  Preparando o áudio… na primeira vez leva de 15 segundos a 1 minuto (comentários longos); depois fica guardado e toca na hora.
+                                </p>
+                              )}
+                              {active.state === "error" && (
+                                <p className="text-[10px] text-[var(--danger)]">
+                                  Não foi possível gerar o áudio agora.{" "}
+                                  <button
+                                    className="underline"
+                                    onClick={() => setCommentaryAudio({ key: audioKey, state: "loading" })}
+                                  >
+                                    Tentar de novo
+                                  </button>
+                                </p>
+                              )}
+                              {active.state !== "error" && (
+                                <audio
+                                  key={audioKey}
+                                  src={src}
+                                  controls
+                                  autoPlay
+                                  preload="auto"
+                                  className="w-full h-9"
+                                  onCanPlay={() => setCommentaryAudio({ key: audioKey, state: "ready" })}
+                                  onPlay={(e) => {
+                                    e.currentTarget.playbackRate = narrationRate;
+                                    onCommentaryAudioStart();
+                                  }}
+                                  onError={() => setCommentaryAudio({ key: audioKey, state: "error" })}
+                                />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <p
                       className="text-[var(--text-secondary)] leading-relaxed whitespace-pre-line"
                       style={{ fontSize: `${Math.max(12, Math.round(reading.fontSize * 0.85))}px`, fontFamily: readingFamily }}

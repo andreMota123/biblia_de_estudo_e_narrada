@@ -46,3 +46,6 @@ next-env.d.ts
 # registros locais da tradução e da sincronização do comentário
 /scripts/*.log
 /scripts/*.saida
+
+# áudio do comentário gerado sob demanda (em produção fica num volume)
+/.cache/

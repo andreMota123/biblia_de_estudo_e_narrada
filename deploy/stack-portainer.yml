@@ -10,10 +10,12 @@ version: "3.8"
 
 services:
   app:
-    image: biblia-origens:5
+    image: biblia-origens:7
     volumes:
       - /opt/biblia/narracao:/app/public/narracao:ro
       - /opt/biblia/comentario:/app/public/commentary/matthew-henry:ro
+      # áudio do comentário gerado sob demanda (precisa ser gravável, dono uid 1000)
+      - /opt/biblia/audio-comentario:/app/audio-comentario
     networks:
       - sublime
     deploy:

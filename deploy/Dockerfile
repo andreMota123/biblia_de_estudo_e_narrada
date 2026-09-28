@@ -17,7 +17,13 @@ RUN rm -rf public/narracao && npm run build
 
 FROM node:22-alpine
 WORKDIR /app
-ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
+# Voz neural para narrar o comentário sob demanda (app/api/comentario-audio).
+RUN apk add --no-cache python3 \
+ && python3 -m venv /opt/tts \
+ && /opt/tts/bin/pip install --no-cache-dir edge-tts==7.2.8 \
+ && mkdir -p /app/audio-comentario && chown node:node /app/audio-comentario
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0 \
+    EDGE_TTS_BIN=/opt/tts/bin/edge-tts COMENTARIO_AUDIO_DIR=/app/audio-comentario
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
