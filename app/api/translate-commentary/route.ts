@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/app/lib/supabaseClient";
+import { createClient } from "@supabase/supabase-js";
+
+// O cache de traduções é fechado para o navegador (RLS sem política). Só esta
+// rota, que roda no servidor, grava e lê, com a chave service_role — que
+// nunca vai para o código do navegador (não tem prefixo NEXT_PUBLIC_).
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co",
+  process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-service-key",
+  { auth: { persistSession: false } }
+);
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -43,7 +52,7 @@ export async function POST(req: NextRequest) {
   // 1. Verifica o cache primeiro — evita gastar tokens numa tradução que
   // outra sessão (ou este mesmo usuário, antes) já pediu.
   const { data: cached, error: cacheError } = await supabase
-    .from("commentary_translations")
+    .from("biblia_commentary_translations")
     .select("text_pt, truncated")
     .eq("book", book)
     .eq("chapter", chapter)
@@ -111,7 +120,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 3. Salva no cache pra próxima vez (qualquer usuário) vir instantâneo.
-  const { error: insertError } = await supabase.from("commentary_translations").insert({
+  const { error: insertError } = await supabase.from("biblia_commentary_translations").insert({
     book,
     chapter,
     verse_start: s,

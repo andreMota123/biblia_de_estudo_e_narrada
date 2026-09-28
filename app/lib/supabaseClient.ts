@@ -3,7 +3,11 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
+// Sem Supabase configurado o app funciona em "modo local": sem login, com
+// favoritos, destaques e notas salvos só neste navegador (userDataStore).
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+
+if (!isSupabaseConfigured) {
   // Em dev isso aparece no console; em produção a Vercel precisa ter as duas
   // variáveis configuradas em Project Settings > Environment Variables.
   console.warn(

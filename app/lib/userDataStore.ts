@@ -1,5 +1,41 @@
 import { supabase } from "./supabaseClient";
-import type { HighlightColor, UserData, VerseNote } from "../types";
+import type { HighlightColor, User, UserData, VerseNote } from "../types";
+
+// --- Modo local (sem Supabase): tudo fica no localStorage deste navegador ---
+
+export const LOCAL_USER: User = {
+  id: "local",
+  name: process.env.NEXT_PUBLIC_READER_NAME || "Leitor",
+  email: "",
+};
+
+const LOCAL_VERSE_NOTES_KEY = "biblia-origens-notas-versiculos";
+const LOCAL_WORD_NOTES_KEY = "biblia-origens-notas-palavras";
+
+function readLocal<T extends object>(key: string): T {
+  if (typeof window === "undefined") return {} as T;
+  try {
+    return JSON.parse(localStorage.getItem(key) || "{}") as T;
+  } catch {
+    return {} as T;
+  }
+}
+
+function writeLocal(key: string, value: object) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (err) {
+    console.error("Erro ao salvar no navegador:", err);
+  }
+}
+
+export function loadLocalUserData(): UserData {
+  return readLocal<UserData>(LOCAL_VERSE_NOTES_KEY);
+}
+
+export function loadLocalWordNotes(): Record<string, string> {
+  return readLocal<Record<string, string>>(LOCAL_WORD_NOTES_KEY);
+}
 
 type VerseNoteRow = {
   verse_key: string;
@@ -13,8 +49,10 @@ type VerseNoteRow = {
 // Busca todas as anotações do usuário logado e monta o UserData no formato
 // que o resto do app já espera ("Livro-Cap-Vers" -> VerseNote).
 export async function fetchUserData(userId: string): Promise<UserData> {
+  if (userId === LOCAL_USER.id) return loadLocalUserData();
+
   const { data, error } = await supabase
-    .from("verse_notes")
+    .from("biblia_verse_notes")
     .select("verse_key, favorite, highlighted, highlight_color, note, study")
     .eq("user_id", userId);
 
@@ -50,9 +88,17 @@ export async function upsertVerseNote(
   const isEmpty =
     !note.favorite && !note.highlightColor && !note.note.trim() && !(note.study ?? "").trim();
 
+  if (userId === LOCAL_USER.id) {
+    const all = loadLocalUserData();
+    if (isEmpty) delete all[verseKey];
+    else all[verseKey] = note;
+    writeLocal(LOCAL_VERSE_NOTES_KEY, all);
+    return;
+  }
+
   if (isEmpty) {
     const { error } = await supabase
-      .from("verse_notes")
+      .from("biblia_verse_notes")
       .delete()
       .eq("user_id", userId)
       .eq("verse_key", verseKey);
@@ -60,7 +106,7 @@ export async function upsertVerseNote(
     return;
   }
 
-  const { error } = await supabase.from("verse_notes").upsert({
+  const { error } = await supabase.from("biblia_verse_notes").upsert({
     user_id: userId,
     verse_key: verseKey,
     favorite: note.favorite,
@@ -76,7 +122,9 @@ export async function upsertVerseNote(
 // --- Notas ligadas à palavra original (Strong's), não a um versículo ---
 
 export async function fetchWordNotes(userId: string): Promise<Record<string, string>> {
-  const { data, error } = await supabase.from("word_notes").select("strong, note").eq("user_id", userId);
+  if (userId === LOCAL_USER.id) return loadLocalWordNotes();
+
+  const { data, error } = await supabase.from("biblia_word_notes").select("strong, note").eq("user_id", userId);
 
   if (error) {
     console.error("Erro ao carregar notas de palavra do Supabase:", error.message);
@@ -91,12 +139,20 @@ export async function fetchWordNotes(userId: string): Promise<Record<string, str
 }
 
 export async function upsertWordNote(userId: string, strong: string, note: string): Promise<void> {
+  if (userId === LOCAL_USER.id) {
+    const all = loadLocalWordNotes();
+    if (note.trim()) all[strong] = note;
+    else delete all[strong];
+    writeLocal(LOCAL_WORD_NOTES_KEY, all);
+    return;
+  }
+
   if (!note.trim()) {
-    const { error } = await supabase.from("word_notes").delete().eq("user_id", userId).eq("strong", strong);
+    const { error } = await supabase.from("biblia_word_notes").delete().eq("user_id", userId).eq("strong", strong);
     if (error) console.error("Erro ao remover nota de palavra vazia:", error.message);
     return;
   }
 
-  const { error } = await supabase.from("word_notes").upsert({ user_id: userId, strong, note });
+  const { error } = await supabase.from("biblia_word_notes").upsert({ user_id: userId, strong, note });
   if (error) console.error("Erro ao salvar nota de palavra no Supabase:", error.message);
 }

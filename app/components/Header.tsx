@@ -1,4 +1,5 @@
 import type { ActiveTab, User } from "../types";
+import { isSupabaseConfigured } from "../lib/supabaseClient";
 import { AcademicCapIcon, BookOpenIcon, AppLogo, SearchIcon, SunIcon, MoonIcon, StarIcon, HighlighterIcon, NoteIcon } from "../lib/icons";
 
 type HeaderProps = {
@@ -179,7 +180,7 @@ export default function Header({
             {user ? (
               <div className="flex items-center gap-3">
                 <span className="text-xs text-[var(--text-muted)]">Olá, <strong className="text-[var(--text)]">{user.name}</strong></span>
-                <button onClick={handleLogout} className="text-xs font-semibold text-rose-400 hover:underline">Sair</button>
+                {isSupabaseConfigured && <button onClick={handleLogout} className="text-xs font-semibold text-rose-400 hover:underline">Sair</button>}
               </div>
             ) : (
               <button onClick={() => setActiveTab("home")} className="text-xs bg-[var(--accent)] text-white px-3 py-1.5 rounded-lg font-medium">
@@ -317,7 +318,7 @@ export default function Header({
             {user ? (
               <>
                 <span className="text-xs text-[var(--text-muted)]">Olá, <strong className="text-[var(--text)]">{user.name}</strong></span>
-                <button onClick={handleLogout} className="text-xs font-semibold text-rose-400">Sair</button>
+                {isSupabaseConfigured && <button onClick={handleLogout} className="text-xs font-semibold text-rose-400">Sair</button>}
               </>
             ) : (
               <button onClick={() => { setActiveTab("home"); setMenuMobileAberto(false); }} className="w-full text-xs bg-[var(--accent)] text-white p-2 rounded-lg font-medium text-center">

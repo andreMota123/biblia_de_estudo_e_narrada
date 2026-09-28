@@ -1,4 +1,5 @@
-import { AnimatedLogo, BookOpenIcon, AcademicCapIcon, StarIcon, HighlighterIcon, NoteIcon, SearchIcon } from "../lib/icons";
+import { useState } from "react";
+import { AnimatedLogo, EyeIcon, HeadphonesIcon, BookOpenIcon, AcademicCapIcon, StarIcon, HighlighterIcon, NoteIcon, SearchIcon } from "../lib/icons";
 import type { ActiveTab } from "../types";
 
 type HomeViewProps = {
@@ -14,6 +15,10 @@ type HomeViewProps = {
   handleAuth: (e: React.FormEvent) => void;
   onStartReading: () => void;
   setActiveTab: (tab: ActiveTab) => void;
+  lastReading: { book: string; chapter: number };
+  onListen: () => void;
+  // "João 3:16" quando há uma narração em andamento/pausada para retomar.
+  listenLabel: string | null;
 };
 
 const HUB_ITEMS: { tab: ActiveTab; label: string; icon: React.ReactNode }[] = [
@@ -37,7 +42,11 @@ export default function HomeView({
   setPasswordInput,
   handleAuth,
   setActiveTab,
+  lastReading,
+  onListen,
+  listenLabel,
 }: HomeViewProps) {
+  const [showPassword, setShowPassword] = useState(false);
   return (
     <main className="flex-1 flex items-center justify-center relative overflow-y-auto bg-[var(--bg)] py-8">
       {/* GLOW DECORATIVO DE FUNDO */}
@@ -58,6 +67,31 @@ export default function HomeView({
             <p className="text-center text-xs text-[var(--text-muted)] mb-6">
               Olá, <strong className="text-[var(--text)]">{user.name}</strong> — o que você quer fazer?
             </p>
+            {/* CONTINUAR DE ONDE PAROU */}
+            <div className="mb-4 p-4 rounded-2xl border border-[var(--accent)]/40 bg-[var(--bg-elevated)]/70">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)]">Continuar de onde parou</p>
+              <p className="mt-1 text-lg font-serif font-bold text-[var(--text)]">
+                {lastReading.book} {lastReading.chapter}
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setActiveTab("read")}
+                  className="flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--accent)]/60"
+                >
+                  <BookOpenIcon /> Ler
+                </button>
+                <button
+                  onClick={onListen}
+                  className="flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]"
+                >
+                  <HeadphonesIcon /> Ouvir
+                </button>
+              </div>
+              {listenLabel && (
+                <p className="mt-2 text-[10px] text-center text-[var(--text-dim)]">Narração parou em {listenLabel}</p>
+              )}
+            </div>
+
             <div className="grid grid-cols-3 gap-3">
               {HUB_ITEMS.map((item) => (
                 <button
@@ -115,14 +149,29 @@ export default function HomeView({
                 placeholder="seuemail@exemplo.com"
                 className="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-xs text-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)]"
               />
-              <input
-                type="password"
-                required
-                value={passwordInput}
-                onChange={(e) => setPasswordInput(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-xs text-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)]"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  autoComplete={authMode === "login" ? "current-password" : "new-password"}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  required
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg pl-3 pr-10 py-2.5 text-xs text-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute inset-y-0 right-0 px-3 flex items-center text-[var(--text-muted)] hover:text-[var(--text)]"
+                  aria-label={showPassword ? "Esconder senha" : "Mostrar senha"}
+                  title={showPassword ? "Esconder senha" : "Mostrar senha"}
+                >
+                  <EyeIcon open={showPassword} />
+                </button>
+              </div>
               <button
                 type="submit"
                 className="w-full bg-[var(--accent)] text-white font-semibold py-2.5 rounded-lg text-xs hover:bg-[var(--accent-hover)] transition-colors"

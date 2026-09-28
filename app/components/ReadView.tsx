@@ -19,7 +19,7 @@ import { loadCommentaryBook, getCommentaryForVerse, getCommentaryIntro, isBlockT
 import { formatTranslit } from "../lib/format";
 import { studyBlocksToPlainText, parseStudyBlocks } from "../lib/studyBlocks";
 import StudyEditor from "./StudyEditor";
-import { LinkIcon, StarIcon } from "../lib/icons";
+import { HeadphonesIcon, LinkIcon, StarIcon } from "../lib/icons";
 
 type ReadViewProps = {
   selectedBook: string;
@@ -48,6 +48,9 @@ type ReadViewProps = {
   bibleData: BibleData;
   wordNotes: Record<string, string>;
   saveWordNote: (strong: string, note: string) => void;
+  // Versículo deste capítulo que está sendo narrado agora (ou null).
+  audioVerse: number | null;
+  onListenFrom: (verse: number) => void;
 };
 
 function refLabel(o: Occurrence): string {
@@ -78,7 +81,22 @@ export default function ReadView({
   bibleData,
   wordNotes,
   saveWordNote,
+  audioVerse,
+  onListenFrom,
 }: ReadViewProps) {
+  // Acompanha a narração: mantém o versículo narrado visível na tela.
+  const verseRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  useEffect(() => {
+    if (audioVerse === null) return;
+    const el = verseRefs.current[audioVerse];
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const margin = 120;
+    if (rect.top < margin || rect.bottom > window.innerHeight - margin) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [audioVerse]);
+
   const [wordTab, setWordTab] = useState<"definicao" | "ocorrencias">("definicao");
   const [expandedVerse, setExpandedVerse] = useState<number | null>(null);
   const [dictLang, setDictLang] = useState<"pt" | "en">("pt");
@@ -92,6 +110,7 @@ export default function ReadView({
   const [translatingBlock, setTranslatingBlock] = useState<string | null>(null);
   const [translateError, setTranslateError] = useState<string | null>(null);
   const [, bumpTranslation] = useState(0);
+  const [showOriginal, setShowOriginal] = useState(false);
 
   // Carrega o comentário de Matthew Henry do livro atual assim que o
   // painel de comentário é aberto (um arquivo por livro, reaproveitado do
@@ -329,10 +348,21 @@ export default function ReadView({
                       {!block.t_pt && (
                         <span className="ml-2 normal-case font-normal text-[var(--text-dim)]">(ainda só em inglês)</span>
                       )}
+                      {block.t_pt && block.t_pt_auto && (
+                        <span className="ml-2 normal-case font-normal text-[var(--text-dim)]">(tradução automática)</span>
+                      )}
                     </p>
                     <p className="text-[var(--text-secondary)] leading-relaxed whitespace-pre-line">
-                      {block.t_pt || block.t}
+                      {block.t_pt && !showOriginal ? block.t_pt : block.t}
                     </p>
+                    {block.t_pt && (
+                      <button
+                        onClick={() => setShowOriginal((v) => !v)}
+                        className="mt-2 text-[10px] font-medium text-[var(--accent)] hover:underline"
+                      >
+                        {showOriginal ? "Ver em português" : "Ver o original em inglês"}
+                      </button>
+                    )}
                     {isBlockTruncated(block) && (
                       <p className="mt-2 text-[10px] text-[var(--text-muted)] italic border-l-2 border-[var(--border-strong)] pl-2">
                         O texto termina aqui de forma abrupta na própria fonte original — não é falha do
@@ -624,6 +654,16 @@ export default function ReadView({
 
           <div className="flex items-center gap-2">
             <button
+              onClick={() => onListenFrom(Number(Object.keys(currentChapterVerses)[0] ?? 1))}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                audioVerse !== null
+                  ? "bg-[var(--accent)]/15 text-[var(--accent)] border-[var(--accent)]/60"
+                  : "bg-[var(--accent)] text-white border-[var(--accent)] hover:bg-[var(--accent-hover)]"
+              }`}
+            >
+              <HeadphonesIcon /> {audioVerse !== null ? "Ouvindo" : "Ouvir capítulo"}
+            </button>
+            <button
               onClick={() => setActiveSidePanel(activeSidePanel === "context" ? "none" : "context")}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                 activeSidePanel === "context"
@@ -642,6 +682,7 @@ export default function ReadView({
             const vNum = parseInt(vNumStr);
             const verseKey = `${selectedBook}-${selectedChapter}-${vNum}`;
             const isExpanded = expandedVerse === vNum;
+            const isNarrating = audioVerse === vNum;
             const vNote = userData[verseKey];
             const highlightClass = vNote?.highlightColor
               ? {
@@ -661,6 +702,9 @@ export default function ReadView({
             return (
               <div
                 key={vNum}
+                ref={(el) => {
+                  verseRefs.current[vNum] = el;
+                }}
                 onClick={() => {
                   const next = isExpanded ? null : vNum;
                   setExpandedVerse(next);
@@ -674,7 +718,7 @@ export default function ReadView({
                   isExpanded
                     ? "border-[var(--accent)]/60 bg-[var(--bg-elevated)]/80 shadow-[0_0_0_1px_rgba(10,132,255,0.15)]"
                     : "border-[var(--bg-elevated-2)] bg-[var(--bg-elevated)]/60 hover:border-[var(--border)]"
-                } ${highlightClass}`}
+                } ${highlightClass} ${isNarrating ? "ring-2 ring-[var(--accent)] shadow-[0_0_24px_-6px_var(--accent)]" : ""}`}
               >
                 <div className="flex items-start gap-3 mb-1">
                   <span className="font-bold text-xs text-white bg-[var(--accent)] px-2 py-0.5 rounded-md shrink-0">
@@ -688,6 +732,13 @@ export default function ReadView({
                     className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-[var(--border)]"
                     onClick={(e) => e.stopPropagation()}
                   >
+                    <button
+                      onClick={() => onListenFrom(vNum)}
+                      className="flex items-center gap-1 text-xs px-2.5 py-1 rounded font-medium bg-[var(--bg-elevated-2)] text-[var(--text-secondary)] border border-[var(--border)] hover:border-[var(--accent)]/60"
+                      title="Ouvir a partir deste versículo"
+                    >
+                      <HeadphonesIcon /> Ouvir daqui
+                    </button>
                     <button
                       onClick={() => toggleFavorite(vNum)}
                       className={`p-1.5 rounded border ${

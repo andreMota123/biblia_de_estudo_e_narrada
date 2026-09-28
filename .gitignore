@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# narração gerada por scripts/gerar-narracao.py (~2 GB, fica fora do git)
+/public/narracao/
+
+# registros locais da tradução e da sincronização do comentário
+/scripts/*.log
+/scripts/*.saida

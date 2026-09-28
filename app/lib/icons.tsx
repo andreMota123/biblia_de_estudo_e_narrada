@@ -98,3 +98,57 @@ export const MoonIcon = () => (
     <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.6 6.6 0 0 0 10.5 10.5Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
   </svg>
 );
+
+// --- ÍCONES DO PLAYER DE ÁUDIO ---
+
+export const HeadphonesIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 18v-6a9 9 0 0118 0v6" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3v5zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3v5z" />
+  </svg>
+);
+
+export const PlayIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M8 5.14v13.72a1 1 0 001.5.86l11.14-6.86a1 1 0 000-1.72L9.5 4.28A1 1 0 008 5.14z" />
+  </svg>
+);
+
+export const PauseIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+    <rect x="6" y="4.5" width="4" height="15" rx="1.2" />
+    <rect x="14" y="4.5" width="4" height="15" rx="1.2" />
+  </svg>
+);
+
+export const StopIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+    <rect x="6" y="6" width="12" height="12" rx="2" />
+  </svg>
+);
+
+export const PrevIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M6 5h2v14H6zM20 5.9v12.2a.9.9 0 01-1.38.76L9.7 12.76a.9.9 0 010-1.52l8.92-5.1A.9.9 0 0120 5.9z" />
+  </svg>
+);
+
+export const NextIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M16 5h2v14h-2zM4 5.9v12.2a.9.9 0 001.38.76l8.92-5.1a.9.9 0 000-1.52L5.38 5.14A.9.9 0 004 5.9z" />
+  </svg>
+);
+
+export const MoonTimerIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 14.5A8.5 8.5 0 119.5 4a6.6 6.6 0 0010.5 10.5z" />
+  </svg>
+);
+
+export const EyeIcon = ({ open }: { open: boolean }) => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+    <circle cx="12" cy="12" r="3" strokeWidth="2" />
+    {!open && <path strokeLinecap="round" strokeWidth="2" d="M4 4l16 16" />}
+  </svg>
+);

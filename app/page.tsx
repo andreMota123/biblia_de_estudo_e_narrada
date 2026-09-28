@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import bibleData from "../data/bible/bible.json";
 import contextData from "../data/study/context.json";
 import type {
@@ -29,15 +29,42 @@ import { loadBookLexicon } from "./lib/lexicon";
 import { loadCrossReferences, getCrossReferences } from "./lib/crossReferences";
 import { loadOccurrences } from "./lib/occurrences";
 import { resolveWordSearch } from "./lib/wordSearch";
-import { supabase } from "./lib/supabaseClient";
-import { fetchUserData, upsertVerseNote, fetchWordNotes, upsertWordNote } from "./lib/userDataStore";
+import { supabase, isSupabaseConfigured } from "./lib/supabaseClient";
+import {
+  fetchUserData,
+  upsertVerseNote,
+  fetchWordNotes,
+  upsertWordNote,
+  LOCAL_USER,
+  loadLocalUserData,
+  loadLocalWordNotes,
+} from "./lib/userDataStore";
+import { useBibleAudio, type AudioPosition } from "./lib/useBibleAudio";
+import AudioPlayer from "./components/AudioPlayer";
+
+const LAST_READ_KEY = "biblia-origens-ultima-leitura";
+
+type LastRead = { book: string; chapter: number; verse: number };
+
+function readLastRead(): LastRead | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const parsed = JSON.parse(localStorage.getItem(LAST_READ_KEY) || "null") as LastRead | null;
+    return parsed?.book && parsed.chapter ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+const subscribeNothing = () => () => {};
 
 export default function BibliaOrigensApp() {
   const typedBibleData = bibleData as unknown as BibleData;
   const typedContextData = contextData as unknown as Record<string, ContextInfo>;
 
   // ESTADOS
-  const [user, setUser] = useState<User | null>(null);
+  // Em modo local (sem Supabase) já começa "logado" como o leitor local.
+  const [user, setUser] = useState<User | null>(isSupabaseConfigured ? null : LOCAL_USER);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [emailInput, setEmailInput] = useState("");
   const [nameInput, setNameInput] = useState("");
@@ -60,16 +87,33 @@ export default function BibliaOrigensApp() {
 
   const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
 
-  const [selectedBook, setSelectedBook] = useState<string>("Gênesis");
-  const [selectedChapter, setSelectedChapter] = useState<number>(1);
-  const [selectedVerse, setSelectedVerse] = useState<number | null>(1);
+  // Reabre no último capítulo lido.
+  const [selectedBook, setSelectedBook] = useState<string>(() => {
+    const last = readLastRead();
+    return last && typedBibleData.books[last.book] ? last.book : "Gênesis";
+  });
+  const [selectedChapter, setSelectedChapter] = useState<number>(() => readLastRead()?.chapter ?? 1);
+  const [selectedVerse, setSelectedVerse] = useState<number | null>(() => readLastRead()?.verse ?? 1);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        LAST_READ_KEY,
+        JSON.stringify({ book: selectedBook, chapter: selectedChapter, verse: selectedVerse ?? 1 })
+      );
+    } catch {
+      // sem armazenamento: só não lembra a posição
+    }
+  }, [selectedBook, selectedChapter, selectedVerse]);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("home");
   const [activeSidePanel, setActiveSidePanel] = useState<ActiveSidePanel>("none");
   const [selectedWord, setSelectedWord] = useState<InterlinearWord | null>(null);
 
-  const [userData, setUserData] = useState<UserData>({});
-  const [wordNotes, setWordNotes] = useState<Record<string, string>>({});
+  const [userData, setUserData] = useState<UserData>(() => (isSupabaseConfigured ? {} : loadLocalUserData()));
+  const [wordNotes, setWordNotes] = useState<Record<string, string>>(() =>
+    isSupabaseConfigured ? {} : loadLocalWordNotes()
+  );
   const [searchTerm, setSearchTerm] = useState<string>("");
   const searchTermRef = useRef("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -94,6 +138,7 @@ export default function BibliaOrigensApp() {
   }, [selectedBook]);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) return;
     let cancelled = false;
 
     // Restaura a sessão (o supabase-js já persiste o token no localStorage
@@ -101,7 +146,7 @@ export default function BibliaOrigensApp() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (cancelled || !session?.user) return;
       const su = session.user;
-      setUser({ id: su.id, email: su.email ?? "", name: (su.user_metadata?.name as string) || (su.email?.split("@")[0] ?? "") });
+      setUser({ id: su.id, email: su.email ?? "", name: (su.user_metadata?.name as string) || process.env.NEXT_PUBLIC_READER_NAME || (su.email?.split("@")[0] ?? "") });
       setActiveTab("read");
       const [data, wNotes] = await Promise.all([fetchUserData(su.id), fetchWordNotes(su.id)]);
       if (!cancelled) {
@@ -118,7 +163,7 @@ export default function BibliaOrigensApp() {
         return;
       }
       const su = session.user;
-      setUser({ id: su.id, email: su.email ?? "", name: (su.user_metadata?.name as string) || (su.email?.split("@")[0] ?? "") });
+      setUser({ id: su.id, email: su.email ?? "", name: (su.user_metadata?.name as string) || process.env.NEXT_PUBLIC_READER_NAME || (su.email?.split("@")[0] ?? "") });
       const [data, wNotes] = await Promise.all([fetchUserData(su.id), fetchWordNotes(su.id)]);
       setUserData(data);
       setWordNotes(wNotes);
@@ -186,6 +231,41 @@ export default function BibliaOrigensApp() {
     setAuthNotice(null);
     setActiveTab("read");
   };
+
+  // NARRAÇÃO — o player vive aqui (e não no ReadView) para continuar tocando
+  // ao trocar de capítulo ou de aba.
+  const selectedRef = useRef({ book: selectedBook, chapter: selectedChapter });
+  useEffect(() => {
+    selectedRef.current = { book: selectedBook, chapter: selectedChapter };
+  }, [selectedBook, selectedChapter]);
+
+  const audio = useBibleAudio({
+    bibleData: typedBibleData,
+    // Quando a narração passa pro capítulo seguinte, a tela acompanha — mas
+    // só se a pessoa estava vendo o capítulo que acabou de ser narrado.
+    onChapterAdvance: (from: AudioPosition, to: AudioPosition) => {
+      const cur = selectedRef.current;
+      if (cur.book === from.book && cur.chapter === from.chapter) {
+        setSelectedBook(to.book);
+        setSelectedChapter(to.chapter);
+        setSelectedVerse(to.verse);
+      }
+    },
+  });
+
+  const listenFrom = (verse: number) => {
+    audio.play({ book: selectedBook, chapter: selectedChapter, verse });
+  };
+
+  const audioVerse =
+    audio.status !== "idle" && audio.position?.book === selectedBook && audio.position.chapter === selectedChapter
+      ? audio.position.verse
+      : null;
+
+  // A página é pré-renderizada no servidor, mas quase todo o estado inicial
+  // vem do localStorage (tema, última leitura, modo local). Até hidratar,
+  // mostra só o fundo — assim servidor e navegador renderizam o mesmo HTML.
+  const hydrated = useSyncExternalStore(subscribeNothing, () => true, () => false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -330,6 +410,10 @@ export default function BibliaOrigensApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- lexiconTick força o recálculo depois que loadCrossReferences preenche um cache fora do estado do React (mesmo padrão usado para o léxico).
   }, [selectedBook, selectedChapter, selectedVerse, lexiconTick, typedBibleData]);
 
+  if (!hydrated) {
+    return <div className="h-screen w-screen bg-[var(--bg)]" />;
+  }
+
   return (
     <div className="h-screen w-screen bg-[var(--bg)] text-[var(--text)] font-sans flex flex-col overflow-hidden">
 
@@ -394,6 +478,12 @@ export default function BibliaOrigensApp() {
             handleAuth={handleAuth}
             onStartReading={() => setActiveTab("read")}
             setActiveTab={setActiveTab}
+            lastReading={{ book: selectedBook, chapter: selectedChapter }}
+            onListen={() => {
+              setActiveTab("read");
+              audio.play(audio.position ?? { book: selectedBook, chapter: selectedChapter, verse: 1 });
+            }}
+            listenLabel={audio.position ? `${audio.position.book} ${audio.position.chapter}:${audio.position.verse}` : null}
           />
         )}
 
@@ -423,6 +513,8 @@ export default function BibliaOrigensApp() {
             bibleData={typedBibleData}
             wordNotes={wordNotes}
             saveWordNote={saveWordNote}
+            audioVerse={audioVerse}
+            onListenFrom={listenFrom}
           />
         )}
 
@@ -451,6 +543,15 @@ export default function BibliaOrigensApp() {
           />
         )}
       </div>
+
+      {user && audio.status !== "idle" && (
+        <AudioPlayer
+          audio={audio}
+          onOpenPosition={() => {
+            if (audio.position) navigateToVerse(audio.position.book, audio.position.chapter, audio.position.verse);
+          }}
+        />
+      )}
     </div>
   );
 }

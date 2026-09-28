@@ -7,7 +7,9 @@
 // e = fim), não um versículo isolado — assim como no original de Matthew
 // Henry, que comentava passagens inteiras de uma vez.
 
-export type CommentaryBlock = { s: number; e: number; t: string; t_pt?: string };
+// t_pt_auto: tradução feita por IA local (scripts/traduzir-comentario.py);
+// o app avisa e deixa ver o original em inglês.
+export type CommentaryBlock = { s: number; e: number; t: string; t_pt?: string; t_pt_auto?: boolean };
 
 type CommentaryBook = {
   intro: string;

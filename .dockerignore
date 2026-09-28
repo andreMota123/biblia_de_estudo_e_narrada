@@ -1,0 +1,6 @@
+node_modules
+.next
+.git
+public/narracao
+data/bible/biblia-livre.zip
+.env*

@@ -1,0 +1,33 @@
+# Stack "biblia" para o Portainer (Docker Swarm da VPS).
+# Portainer → Stacks → Add stack → nome "biblia" → Web editor → colar isto.
+#
+# A imagem biblia-origens:<versão> é montada no computador local
+# (deploy/Dockerfile) e carregada na VPS com `docker save | ssh ... docker load`.
+# A narração fica em /opt/biblia/narracao (enviada por rsync).
+# Troque biblia.seudominio.com.br pelo seu domínio e confira o nome da rede
+# do Traefik (aqui "sublime") e do certresolver.
+version: "3.8"
+
+services:
+  app:
+    image: biblia-origens:3
+    volumes:
+      - /opt/biblia/narracao:/app/public/narracao:ro
+      - /opt/biblia/comentario:/app/public/commentary/matthew-henry:ro
+    networks:
+      - sublime
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 512M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.biblia.rule=Host(`biblia.seudominio.com.br`)
+        - traefik.http.routers.biblia.entrypoints=websecure
+        - traefik.http.routers.biblia.tls.certresolver=letsencryptresolver
+        - traefik.http.services.biblia.loadbalancer.server.port=3000
+
+networks:
+  sublime:
+    external: true
