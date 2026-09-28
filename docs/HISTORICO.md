@@ -86,7 +86,20 @@ toda vez que abrir.
   11") e os tópicos em algarismos romanos viram "Primeiro:", "Segundo:".
 - A rota responde a pedidos com *Range*, que o Safari do iPhone exige.
 
-## 6. Publicação na VPS
+## 6. Biblioteca pessoal privada
+
+- Aba **Biblioteca** para ler livros de estudo pessoais por capítulo (com os
+  mesmos ajustes de letra), e comentários de uso pessoal como uma segunda fonte
+  no painel do comentário, ao lado do Matthew Henry — com áudio sob demanda.
+- **O conteúdo não está neste repositório** nem na pasta pública do site: fica
+  numa pasta da VPS montada só-leitura (`/opt/biblia/privado`). As rotas
+  `/api/privado/*` (e o áudio desses comentários) só respondem com um "passe":
+  um cookie httpOnly assinado (HMAC com `BIBLIA_SEGREDO`), emitido por
+  `/api/privado/sessao` depois de validar o login do Supabase.
+- Formato esperado: `comentario-<nome>/<Livro>.json` com seções `{ s, e, h, t }`
+  por capítulo, e `biblioteca/<id>.json` com capítulos em blocos `{ t, h }`.
+
+## 7. Publicação na VPS
 
 - Imagem Docker (`deploy/Dockerfile`, Next.js *standalone*) montada no
   computador local e carregada na VPS, para não gastar a memória do servidor.
@@ -97,7 +110,7 @@ toda vez que abrir.
   fechado (só a conta do dono).
 - Detalhes em [`deploy/IMPLANTACAO.md`](../deploy/IMPLANTACAO.md).
 
-## 7. Correções no projeto original
+## 8. Correções no projeto original
 
 - `supabase/schema.sql` não criava a coluna `highlight_color` nem a tabela de
   cache de traduções que o código já usava.

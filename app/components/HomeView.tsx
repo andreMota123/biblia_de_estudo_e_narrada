@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AnimatedLogo, EyeIcon, HeadphonesIcon, BookOpenIcon, AcademicCapIcon, StarIcon, HighlighterIcon, NoteIcon, SearchIcon } from "../lib/icons";
+import { AnimatedLogo, EyeIcon, HeadphonesIcon, BookOpenIcon, AcademicCapIcon, StarIcon, HighlighterIcon, NoteIcon, SearchIcon, LibraryIcon } from "../lib/icons";
 import type { ActiveTab } from "../types";
 
 type HomeViewProps = {
@@ -27,6 +27,7 @@ const HUB_ITEMS: { tab: ActiveTab; label: string; icon: React.ReactNode }[] = [
   { tab: "favorites", label: "Favoritos", icon: <StarIcon /> },
   { tab: "highlights", label: "Passagens Destacadas", icon: <HighlighterIcon /> },
   { tab: "wordnotes", label: "Minhas Notas", icon: <NoteIcon /> },
+  { tab: "library", label: "Biblioteca", icon: <LibraryIcon /> },
   { tab: "search", label: "Pesquisa", icon: <SearchIcon /> },
 ];
 

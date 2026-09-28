@@ -152,3 +152,10 @@ export const EyeIcon = ({ open }: { open: boolean }) => (
     {!open && <path strokeLinecap="round" strokeWidth="2" d="M4 4l16 16" />}
   </svg>
 );
+
+export const LibraryIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 19V5a1 1 0 011-1h3a1 1 0 011 1v14M9 19V7a1 1 0 011-1h3a1 1 0 011 1v12" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.5 6.8l2.9-.8a1 1 0 011.2.7l3 11.5a1 1 0 01-.7 1.2l-2.9.8a1 1 0 01-1.2-.7l-3-11.5a1 1 0 01.7-1.2zM3 20h11" />
+  </svg>
+);

@@ -5,6 +5,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { commentaryToSpeech } from "@/app/lib/commentarySpeech";
+import { PRIVADO_DIR, arquivoDentro, autorizado } from "@/app/lib/server/privado";
 
 // Narração do comentário de Matthew Henry, gerada sob demanda.
 //
@@ -21,19 +22,28 @@ const PASTA_AUDIO = process.env.COMENTARIO_AUDIO_DIR || path.join(process.cwd(),
 const EDGE_TTS = process.env.EDGE_TTS_BIN || "edge-tts";
 const VOZ = process.env.NARRACAO_VOZ || "pt-BR-AntonioNeural";
 
-type Bloco = { s: number; e: number; t: string; t_pt?: string };
+type Bloco = { s: number; e: number; t: string; t_pt?: string; h?: string };
+
+// "matthew-henry" (público, traduzido) ou um comentário da pasta privada,
+// que só é narrado e entregue com o passe de login.
+const PUBLICO = "matthew-henry";
 
 // Evita narrar o mesmo bloco duas vezes quando chegam pedidos simultâneos
 // (o navegador costuma pedir o mesmo áudio mais de uma vez ao começar).
 const emAndamento = new Map<string, Promise<void>>();
 
-async function textoDoBloco(livro: string, cap: number, s: number): Promise<string | null> {
-  const arquivo = path.join(PASTA_COMENTARIO, `${livro}.json`);
-  if (path.dirname(arquivo) !== PASTA_COMENTARIO) return null;
+async function textoDoBloco(fonte: string, livro: string, cap: number, s: number): Promise<string | null> {
+  const pasta = fonte === PUBLICO ? PASTA_COMENTARIO : arquivoDentro(PRIVADO_DIR, fonte);
+  const arquivo = pasta ? arquivoDentro(pasta, `${livro}.json`) : null;
+  if (!arquivo) return null;
   try {
     const dados = JSON.parse(await fs.readFile(arquivo, "utf8")) as { chapters: Record<string, Bloco[]> };
     const bloco = dados.chapters[String(cap)]?.find((b) => b.s === s);
-    return bloco?.t_pt ?? null;
+    if (!bloco) return null;
+    if (fonte === PUBLICO) return bloco.t_pt ?? null;
+    // comentários privados já estão em português; o título abre a narração
+    const titulo = bloco.h ? `${bloco.h.replace(/^[\d.]+\s*/, "")}.\n` : "";
+    return `${titulo}${bloco.t.replace(/^[.\s]+/, "")}`;
   } catch {
     return null;
   }
@@ -112,12 +122,12 @@ async function narrar(texto: string, destino: string): Promise<void> {
   await fs.rename(tmp, destino);
 }
 
-async function servir(req: NextRequest, arquivo: string) {
+async function servir(req: NextRequest, arquivo: string, privado: boolean) {
   const { size } = await fs.stat(arquivo);
   const cabecalhos = {
     "Content-Type": "audio/mpeg",
     "Accept-Ranges": "bytes",
-    "Cache-Control": "public, max-age=31536000, immutable",
+    "Cache-Control": privado ? "private, max-age=86400" : "public, max-age=31536000, immutable",
   };
   const faixa = /bytes=(\d*)-(\d*)/.exec(req.headers.get("range") ?? "");
   if (faixa && (faixa[1] || faixa[2])) {
@@ -138,18 +148,26 @@ async function servir(req: NextRequest, arquivo: string) {
 
 export async function GET(req: NextRequest) {
   const p = req.nextUrl.searchParams;
+  const fonte = p.get("fonte") || PUBLICO;
+  if (fonte !== PUBLICO && !autorizado(req)) {
+    return NextResponse.json({ error: "Entre com seu login" }, { status: 401 });
+  }
   const livro = p.get("livro") ?? "";
   const cap = Number(p.get("cap"));
   const s = Number(p.get("s"));
-  if (!livro || /[/\\]|\.\./.test(livro) || !Number.isInteger(cap) || !Number.isInteger(s) || cap < 1 || s < 1) {
+  if (!livro || /[/\\]|\.\./.test(livro) || /[/\\]|\.\./.test(fonte) || !Number.isInteger(cap) || !Number.isInteger(s) || cap < 1 || s < 1) {
     return NextResponse.json({ error: "Parâmetros inválidos" }, { status: 400 });
   }
 
-  const arquivo = path.join(PASTA_AUDIO, VOZ, livro, `${cap}-${s}.mp3`);
+  // o áudio do comentário público fica onde sempre ficou; o privado, à parte
+  const arquivo =
+    fonte === PUBLICO
+      ? path.join(PASTA_AUDIO, VOZ, livro, `${cap}-${s}.mp3`)
+      : path.join(PASTA_AUDIO, VOZ, `_${fonte}`, livro, `${cap}-${s}.mp3`);
   const pronto = await fs.access(arquivo).then(() => true, () => false);
 
   if (!pronto) {
-    const texto = await textoDoBloco(livro, cap, s);
+    const texto = await textoDoBloco(fonte, livro, cap, s);
     if (!texto) {
       return NextResponse.json({ error: "Este comentário ainda não foi traduzido." }, { status: 404 });
     }
@@ -169,5 +187,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return servir(req, arquivo);
+  return servir(req, arquivo, fonte !== PUBLICO);
 }

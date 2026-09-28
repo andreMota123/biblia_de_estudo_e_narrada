@@ -59,7 +59,7 @@ export type ContextInfo = {
 };
 
 
-export type ActiveTab = "home" | "read" | "studies" | "search" | "favorites" | "highlights" | "wordnotes";
+export type ActiveTab = "home" | "read" | "studies" | "search" | "favorites" | "highlights" | "wordnotes" | "library";
 
 export type ActiveSidePanel = "none" | "context" | "study" | "references" | "word" | "commentary";
 

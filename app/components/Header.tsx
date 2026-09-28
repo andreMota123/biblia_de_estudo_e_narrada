@@ -1,6 +1,6 @@
 import type { ActiveTab, User } from "../types";
 import { isSupabaseConfigured } from "../lib/supabaseClient";
-import { AcademicCapIcon, BookOpenIcon, AppLogo, SearchIcon, SunIcon, MoonIcon, StarIcon, HighlighterIcon, NoteIcon } from "../lib/icons";
+import { AcademicCapIcon, BookOpenIcon, AppLogo, SearchIcon, SunIcon, MoonIcon, StarIcon, HighlighterIcon, NoteIcon, LibraryIcon } from "../lib/icons";
 
 type HeaderProps = {
   user: User | null;
@@ -146,6 +146,16 @@ export default function Header({
                 <NoteIcon /> Notas
               </button>
             )}
+            {user && (
+              <button
+                onClick={() => setActiveTab("library")}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  activeTab === "library" ? "bg-[var(--accent)] text-white" : "text-[var(--text-muted)] hover:bg-[var(--bg-elevated)]"
+                }`}
+              >
+                <LibraryIcon /> Biblioteca
+              </button>
+            )}
             <button
               onClick={() => setActiveTab("search")}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
@@ -273,6 +283,16 @@ export default function Header({
                 }`}
               >
                 <NoteIcon /> Notas
+              </button>
+            )}
+            {user && (
+              <button
+                onClick={() => { setActiveTab("library"); setMenuMobileAberto(false); }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-left ${
+                  activeTab === "library" ? "bg-[var(--accent)] text-white" : "text-[var(--text-muted)] bg-[var(--bg-elevated)]"
+                }`}
+              >
+                <LibraryIcon /> Biblioteca
               </button>
             )}
             <button

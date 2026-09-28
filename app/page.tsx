@@ -25,6 +25,7 @@ import FavoritesView from "./components/FavoritesView";
 import HighlightsView from "./components/HighlightsView";
 import WordNotesView from "./components/WordNotesView";
 import SearchView from "./components/SearchView";
+import LibraryView from "./components/LibraryView";
 import { loadBookLexicon } from "./lib/lexicon";
 import { loadCrossReferences, getCrossReferences } from "./lib/crossReferences";
 import { loadOccurrences } from "./lib/occurrences";
@@ -58,6 +59,12 @@ function readLastRead(): LastRead | null {
 }
 
 const subscribeNothing = () => () => {};
+
+// Troca o login do Supabase por um passe (cookie httpOnly) que libera a
+// Biblioteca pessoal e os comentários privados — ver app/lib/server/privado.ts.
+function emitirPasse(accessToken: string) {
+  fetch("/api/privado/sessao", { method: "POST", headers: { Authorization: `Bearer ${accessToken}` } }).catch(() => {});
+}
 
 export default function BibliaOrigensApp() {
   const typedBibleData = bibleData as unknown as BibleData;
@@ -150,6 +157,7 @@ export default function BibliaOrigensApp() {
     // internamente) e escuta login/logout feitos em outras abas.
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (cancelled || !session?.user) return;
+      emitirPasse(session.access_token);
       const su = session.user;
       setUser({ id: su.id, email: su.email ?? "", name: (su.user_metadata?.name as string) || process.env.NEXT_PUBLIC_READER_NAME || (su.email?.split("@")[0] ?? "") });
       setActiveTab("read");
@@ -162,11 +170,13 @@ export default function BibliaOrigensApp() {
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!session?.user) {
+        fetch("/api/privado/sessao", { method: "DELETE" }).catch(() => {});
         setUser(null);
         setUserData({});
         setWordNotes({});
         return;
       }
+      if (_event === "SIGNED_IN" || _event === "TOKEN_REFRESHED") emitirPasse(session.access_token);
       const su = session.user;
       setUser({ id: su.id, email: su.email ?? "", name: (su.user_metadata?.name as string) || process.env.NEXT_PUBLIC_READER_NAME || (su.email?.split("@")[0] ?? "") });
       const [data, wNotes] = await Promise.all([fetchUserData(su.id), fetchWordNotes(su.id)]);
@@ -273,6 +283,7 @@ export default function BibliaOrigensApp() {
   const hydrated = useSyncExternalStore(subscribeNothing, () => true, () => false);
 
   const handleLogout = async () => {
+    await fetch("/api/privado/sessao", { method: "DELETE" }).catch(() => {});
     await supabase.auth.signOut();
     setUser(null);
     setUserData({});
@@ -544,6 +555,8 @@ export default function BibliaOrigensApp() {
         {activeTab === "wordnotes" && user && (
           <WordNotesView wordNotes={wordNotes} navigateToVerse={navigateToVerse} />
         )}
+
+        {activeTab === "library" && user && <LibraryView reading={reading} onReadingChange={setReading} />}
 
         {activeTab === "search" && user && (
           <SearchView

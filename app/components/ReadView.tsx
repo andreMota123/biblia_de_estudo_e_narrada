@@ -19,6 +19,9 @@ import { loadCommentaryBook, getCommentaryForVerse, getCommentaryIntro, isBlockT
 import { formatTranslit } from "../lib/format";
 import { studyBlocksToPlainText, parseStudyBlocks } from "../lib/studyBlocks";
 import StudyEditor from "./StudyEditor";
+import CommentaryAudioBox from "./CommentaryAudioBox";
+import PrivateCommentaryPanel from "./PrivateCommentaryPanel";
+import { COMMENTARY_SOURCES, type CommentarySource } from "../lib/privateCommentary";
 import { FONT_SIZE_MAX, FONT_SIZE_MIN, READING_FONTS, fontFamilyOf, type ReadingSettings } from "../lib/readingFonts";
 import { HeadphonesIcon, LinkIcon, StarIcon } from "../lib/icons";
 
@@ -94,8 +97,25 @@ export default function ReadView({
   onCommentaryAudioStart,
   narrationRate,
 }: ReadViewProps) {
-  // Áudio do comentário: qual bloco foi pedido e em que estado está.
-  const [commentaryAudio, setCommentaryAudio] = useState<{ key: string; state: "loading" | "ready" | "error" } | null>(null);
+  // Fonte do comentário escolhida no painel (lembrada no navegador).
+  const [commentarySource, setCommentarySource] = useState<CommentarySource>(() => {
+    try {
+      const v = localStorage.getItem("biblia-origens-fonte-comentario");
+      return COMMENTARY_SOURCES.some((f) => f.id === v) ? (v as CommentarySource) : "matthew-henry";
+    } catch {
+      return "matthew-henry";
+    }
+  });
+  const chooseCommentarySource = (id: CommentarySource) => {
+    setCommentarySource(id);
+    try {
+      localStorage.setItem("biblia-origens-fonte-comentario", id);
+    } catch {
+      // só não lembra a escolha
+    }
+  };
+  const sourcesForBook = COMMENTARY_SOURCES.filter((f) => f.covers(selectedBook));
+  const activeSource = sourcesForBook.some((f) => f.id === commentarySource) ? commentarySource : "matthew-henry";
   const [showReadingPanel, setShowReadingPanel] = useState(false);
   const readingFamily = fontFamilyOf(reading.font);
   const verseStyle = { fontSize: `${reading.fontSize}px`, fontFamily: readingFamily, lineHeight: 1.7 };
@@ -349,7 +369,32 @@ export default function ReadView({
         {/* PAINEL DE COMENTÁRIO (Matthew Henry, domínio público) */}
         {activeSidePanel === "commentary" && (
           <div className="space-y-3 text-xs">
-            {commentaryLoadedFor !== selectedBook ? (
+            {sourcesForBook.length > 1 && (
+              <div className="flex gap-1 p-0.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border)]">
+                {sourcesForBook.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => chooseCommentarySource(f.id)}
+                    className={`flex-1 px-2 py-1.5 rounded-md text-[11px] font-semibold transition-colors ${
+                      activeSource === f.id ? "bg-[var(--accent)] text-white" : "text-[var(--text-muted)] hover:text-[var(--text)]"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            {activeSource !== "matthew-henry" ? (
+              <PrivateCommentaryPanel
+                source={activeSource}
+                book={selectedBook}
+                chapter={selectedChapter}
+                verse={selectedVerse}
+                textStyle={{ fontSize: `${Math.max(12, Math.round(reading.fontSize * 0.85))}px`, fontFamily: readingFamily }}
+                narrationRate={narrationRate}
+                onAudioStart={onCommentaryAudioStart}
+              />
+            ) : commentaryLoadedFor !== selectedBook ? (
               <p className="text-[var(--text-dim)]">Carregando...</p>
             ) : (
               (() => {
@@ -377,61 +422,14 @@ export default function ReadView({
                         <span className="ml-2 normal-case font-normal text-[var(--text-dim)]">(tradução automática)</span>
                       )}
                     </p>
-                    {block.t_pt && (() => {
-                      const audioKey = `${selectedBook}-${selectedChapter}-${block.s}`;
-                      const active = commentaryAudio?.key === audioKey ? commentaryAudio : null;
-                      const src = `/api/comentario-audio?livro=${encodeURIComponent(selectedBook)}&cap=${selectedChapter}&s=${block.s}`;
-                      return (
-                        <div className="mb-3 p-2.5 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)]/60">
-                          {!active ? (
-                            <button
-                              onClick={() => {
-                                onCommentaryAudioStart();
-                                setCommentaryAudio({ key: audioKey, state: "loading" });
-                              }}
-                              className="flex items-center gap-1.5 text-xs font-semibold text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] px-3 py-1.5 rounded-lg"
-                            >
-                              <HeadphonesIcon /> Ouvir comentário
-                            </button>
-                          ) : (
-                            <div className="space-y-1.5">
-                              {active.state === "loading" && (
-                                <p className="text-[10px] text-[var(--text-muted)]">
-                                  Preparando o áudio… na primeira vez leva de 15 segundos a 1 minuto (comentários longos); depois fica guardado e toca na hora.
-                                </p>
-                              )}
-                              {active.state === "error" && (
-                                <p className="text-[10px] text-[var(--danger)]">
-                                  Não foi possível gerar o áudio agora.{" "}
-                                  <button
-                                    className="underline"
-                                    onClick={() => setCommentaryAudio({ key: audioKey, state: "loading" })}
-                                  >
-                                    Tentar de novo
-                                  </button>
-                                </p>
-                              )}
-                              {active.state !== "error" && (
-                                <audio
-                                  key={audioKey}
-                                  src={src}
-                                  controls
-                                  autoPlay
-                                  preload="auto"
-                                  className="w-full h-9"
-                                  onCanPlay={() => setCommentaryAudio({ key: audioKey, state: "ready" })}
-                                  onPlay={(e) => {
-                                    e.currentTarget.playbackRate = narrationRate;
-                                    onCommentaryAudioStart();
-                                  }}
-                                  onError={() => setCommentaryAudio({ key: audioKey, state: "error" })}
-                                />
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
+                    {block.t_pt && (
+                      <CommentaryAudioBox
+                        audioKey={`${selectedBook}-${selectedChapter}-${block.s}`}
+                        src={`/api/comentario-audio?livro=${encodeURIComponent(selectedBook)}&cap=${selectedChapter}&s=${block.s}`}
+                        rate={narrationRate}
+                        onStart={onCommentaryAudioStart}
+                      />
+                    )}
                     <p
                       className="text-[var(--text-secondary)] leading-relaxed whitespace-pre-line"
                       style={{ fontSize: `${Math.max(12, Math.round(reading.fontSize * 0.85))}px`, fontFamily: readingFamily }}
@@ -485,12 +483,19 @@ export default function ReadView({
                 );
               })()
             )}
-            <p className="text-[10px] text-[var(--text-dim)] pt-2 border-t border-[var(--border)]">
-              Fonte: Matthew Henry, Comentário Bíblico (falecido em 1714), domínio público, obtido via
-              Free Use Bible API (HelloAO Lab). Não cobre Cânticos dos Cânticos, que não recebeu
-              comentário na fonte original. Tradução para o português em andamento, livro por livro —
-              onde ainda não chegou, o texto aparece em inglês.
-            </p>
+            {activeSource === "matthew-henry" ? (
+              <p className="text-[10px] text-[var(--text-dim)] pt-2 border-t border-[var(--border)]">
+                Fonte: Matthew Henry, Comentário Bíblico (falecido em 1714), domínio público, obtido via
+                Free Use Bible API (HelloAO Lab). Não cobre Cânticos dos Cânticos, que não recebeu
+                comentário na fonte original. Tradução para o português em andamento, livro por livro —
+                onde ainda não chegou, o texto aparece em inglês.
+              </p>
+            ) : (
+              <p className="text-[10px] text-[var(--text-dim)] pt-2 border-t border-[var(--border)]">
+                Comentário da sua Biblioteca pessoal, visível só com o seu login. Texto extraído de
+                digitalização: pode haver pequenos erros de leitura.
+              </p>
+            )}
           </div>
         )}
 

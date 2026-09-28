@@ -10,12 +10,17 @@ version: "3.8"
 
 services:
   app:
-    image: biblia-origens:7
+    image: biblia-origens:8
     volumes:
       - /opt/biblia/narracao:/app/public/narracao:ro
       - /opt/biblia/comentario:/app/public/commentary/matthew-henry:ro
       # áudio do comentário gerado sob demanda (precisa ser gravável, dono uid 1000)
       - /opt/biblia/audio-comentario:/app/audio-comentario
+      # Biblioteca pessoal (fora do git e da pasta pública; só com login)
+      - /opt/biblia/privado:/app/privado:ro
+    environment:
+      PRIVADO_DIR: /app/privado
+      # BIBLIA_SEGREDO: defina um valor aleatório longo (ex.: openssl rand -hex 32)
     networks:
       - sublime
     deploy:

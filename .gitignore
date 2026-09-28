@@ -49,3 +49,6 @@ next-env.d.ts
 
 # áudio do comentário gerado sob demanda (em produção fica num volume)
 /.cache/
+
+# cache do Python
+__pycache__/

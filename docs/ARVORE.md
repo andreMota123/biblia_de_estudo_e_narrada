@@ -25,6 +25,9 @@ biblia_de_estudo_e_narrada/
 │   │   │                             estudo, referências, palavra original e comentário — ★ "Ouvir capítulo",
 │   │   │                             ★ "Ouvir daqui", ★ destaque/rolagem do versículo narrado, ★ aviso de
 │   │   │                             tradução automática e "ver o original em inglês", ★ botão "Aa" (tamanho e fonte da letra)
+│   │   ├── LibraryView.tsx         ★ aba Biblioteca: lista de livros e leitura por capítulo
+│   │   ├── PrivateCommentaryPanel.tsx ★ comentário de uso pessoal no painel (seção do versículo)
+│   │   ├── CommentaryAudioBox.tsx  ★ botão e player "Ouvir comentário"
 │   │   ├── AudioPlayer.tsx         ★ barra do player: anterior/tocar/próximo, velocidade, timer de dormir,
 │   │   │                             continuar no próximo capítulo
 │   │   ├── StudyEditor.tsx           editor em blocos do caderno de estudo
@@ -36,6 +39,8 @@ biblia_de_estudo_e_narrada/
 │   │   └── AuthNotice.tsx            aviso "faça login para…"
 │   │
 │   ├── lib/
+│   │   ├── server/privado.ts       ★ passe de acesso (cookie assinado) e pasta privada
+│   │   ├── privateCommentary.ts    ★ carrega comentários privados e acha a seção do versículo
 │   │   ├── commentarySpeech.ts     ★ prepara o comentário para a fala: "Rm 4.11" → "Romanos 4, 11",
 │   │   │                             "II." → "Segundo:"
 │   │   ├── readingFonts.ts         ★ tamanho e fonte da letra da leitura (7 fontes, 14–30 px)
@@ -61,6 +66,9 @@ biblia_de_estudo_e_narrada/
 │   ├── api/comentario-audio/
 │   │   └── route.ts                ★ narra um bloco do comentário sob demanda (voz Antonio, edge-tts na imagem),
 │   │                                 em pedaços paralelos; guarda o MP3 e responde a Range (iPhone)
+│   │
+│   ├── api/privado/                ★ Biblioteca pessoal (só com login): sessao/ (emite o passe),
+│   │                                 comentario/ (comentários de uso pessoal), biblioteca/ (livros)
 │   │
 │   ├── api/translate-commentary/
 │   │   └── route.ts                  tradução sob demanda de um bloco do comentário (API da Anthropic, com
