@@ -19,6 +19,7 @@ import { loadCommentaryBook, getCommentaryForVerse, getCommentaryIntro, isBlockT
 import { formatTranslit } from "../lib/format";
 import { studyBlocksToPlainText, parseStudyBlocks } from "../lib/studyBlocks";
 import StudyEditor from "./StudyEditor";
+import { FONT_SIZE_MAX, FONT_SIZE_MIN, READING_FONTS, fontFamilyOf, type ReadingSettings } from "../lib/readingFonts";
 import { HeadphonesIcon, LinkIcon, StarIcon } from "../lib/icons";
 
 type ReadViewProps = {
@@ -51,6 +52,8 @@ type ReadViewProps = {
   // Versículo deste capítulo que está sendo narrado agora (ou null).
   audioVerse: number | null;
   onListenFrom: (verse: number) => void;
+  reading: ReadingSettings;
+  onReadingChange: (s: ReadingSettings) => void;
 };
 
 function refLabel(o: Occurrence): string {
@@ -83,7 +86,14 @@ export default function ReadView({
   saveWordNote,
   audioVerse,
   onListenFrom,
+  reading,
+  onReadingChange,
 }: ReadViewProps) {
+  const [showReadingPanel, setShowReadingPanel] = useState(false);
+  const readingFamily = fontFamilyOf(reading.font);
+  const verseStyle = { fontSize: `${reading.fontSize}px`, fontFamily: readingFamily, lineHeight: 1.7 };
+  const setFontSize = (n: number) =>
+    onReadingChange({ ...reading, fontSize: Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, n)) });
   // Acompanha a narração: mantém o versículo narrado visível na tela.
   const verseRefs = useRef<Record<number, HTMLDivElement | null>>({});
   useEffect(() => {
@@ -191,7 +201,7 @@ export default function ReadView({
 
   const renderVerseContent = (vKey: string, vText: string, expanded: boolean) => {
     if (!expanded) {
-      return <p className="text-sm leading-relaxed font-serif text-[var(--text-secondary)]">{vText}</p>;
+      return <p className="text-[var(--text-secondary)]" style={verseStyle}>{vText}</p>;
     }
 
     const words = getInterlinearWords(vKey);
@@ -200,7 +210,7 @@ export default function ReadView({
       const lexiconStillLoading = lexiconVersion === 0;
       return (
         <div>
-          <p className="text-sm leading-relaxed font-serif text-[var(--text-secondary)]">{vText}</p>
+          <p className="text-[var(--text-secondary)]" style={verseStyle}>{vText}</p>
           <p className="text-[10px] text-[var(--text-muted)] mt-1 italic">
             {lexiconStillLoading
               ? "Carregando léxico interlinear do livro..."
@@ -212,7 +222,12 @@ export default function ReadView({
 
     return (
       <div>
-        <p className="text-xs text-[var(--text-muted)] italic mb-2 leading-snug">{vText}</p>
+        <p
+          className="text-[var(--text-muted)] italic mb-2 leading-snug"
+          style={{ fontSize: `${Math.round(reading.fontSize * 0.85)}px`, fontFamily: readingFamily }}
+        >
+          {vText}
+        </p>
         <div className="flex flex-wrap gap-y-3 gap-x-2 justify-start" dir={currentLanguage === "Hebraico" ? "rtl" : "ltr"}>
           {words.map((word, idx) => (
             <button
@@ -227,7 +242,10 @@ export default function ReadView({
                   : "border-transparent hover:bg-[var(--border)] hover:border-[var(--border-strong)]"
               }`}
             >
-              <span className={`text-base font-serif font-bold ${word.isJesusWords ? "text-[var(--danger)]" : "text-[var(--text)]"}`}>
+              <span
+                className={`font-serif font-bold ${word.isJesusWords ? "text-[var(--danger)]" : "text-[var(--text)]"}`}
+                style={{ fontSize: `${Math.round(reading.fontSize * 1.1)}px` }}
+              >
                 {word.original}
               </span>
               <span className="text-[10px] italic text-[var(--text-muted)] mt-0.5">({formatTranslit(word.translit)})</span>
@@ -352,7 +370,10 @@ export default function ReadView({
                         <span className="ml-2 normal-case font-normal text-[var(--text-dim)]">(tradução automática)</span>
                       )}
                     </p>
-                    <p className="text-[var(--text-secondary)] leading-relaxed whitespace-pre-line">
+                    <p
+                      className="text-[var(--text-secondary)] leading-relaxed whitespace-pre-line"
+                      style={{ fontSize: `${Math.max(12, Math.round(reading.fontSize * 0.85))}px`, fontFamily: readingFamily }}
+                    >
                       {block.t_pt && !showOriginal ? block.t_pt : block.t}
                     </p>
                     {block.t_pt && (
@@ -664,6 +685,18 @@ export default function ReadView({
               <HeadphonesIcon /> {audioVerse !== null ? "Ouvindo" : "Ouvir capítulo"}
             </button>
             <button
+              onClick={() => setShowReadingPanel((v) => !v)}
+              aria-expanded={showReadingPanel}
+              title="Tamanho e fonte da letra"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                showReadingPanel
+                  ? "bg-[var(--accent)] text-white border-[var(--accent)]"
+                  : "bg-[var(--bg-elevated)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--accent)]/50"
+              }`}
+            >
+              <span className="font-serif">A</span>a
+            </button>
+            <button
               onClick={() => setActiveSidePanel(activeSidePanel === "context" ? "none" : "context")}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                 activeSidePanel === "context"
@@ -675,6 +708,68 @@ export default function ReadView({
             </button>
           </div>
         </div>
+
+        {/* AJUSTES DE LEITURA: tamanho e fonte da letra */}
+        {showReadingPanel && (
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)]/80 p-4 space-y-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)] mb-2">
+                Tamanho da letra · {reading.fontSize} px
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setFontSize(reading.fontSize - 1)}
+                  disabled={reading.fontSize <= FONT_SIZE_MIN}
+                  className="w-9 h-9 rounded-lg border border-[var(--border)] text-sm font-bold text-[var(--text)] disabled:opacity-40"
+                  aria-label="Diminuir a letra"
+                >
+                  A−
+                </button>
+                <input
+                  id="tamanho-letra"
+                  type="range"
+                  min={FONT_SIZE_MIN}
+                  max={FONT_SIZE_MAX}
+                  value={reading.fontSize}
+                  onChange={(e) => setFontSize(Number(e.target.value))}
+                  className="flex-1 accent-[var(--accent)]"
+                  aria-label="Tamanho da letra"
+                />
+                <button
+                  onClick={() => setFontSize(reading.fontSize + 1)}
+                  disabled={reading.fontSize >= FONT_SIZE_MAX}
+                  className="w-9 h-9 rounded-lg border border-[var(--border)] text-lg font-bold text-[var(--text)] disabled:opacity-40"
+                  aria-label="Aumentar a letra"
+                >
+                  A+
+                </button>
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)] mb-2">Fonte</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {READING_FONTS.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => onReadingChange({ ...reading, font: f.id })}
+                    className={`text-left px-3 py-2 rounded-lg border transition-colors ${
+                      reading.font === f.id
+                        ? "border-[var(--accent)] bg-[var(--accent)]/10"
+                        : "border-[var(--border)] hover:border-[var(--accent)]/50"
+                    }`}
+                  >
+                    <span className="block text-[var(--text)]" style={{ fontFamily: f.family, fontSize: "16px" }}>
+                      No princípio criou Deus
+                    </span>
+                    <span className="block text-[10px] text-[var(--text-muted)] mt-0.5">
+                      {f.label} · {f.hint}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* LISTA DE VERSÍCULOS */}
         <div className="space-y-3">

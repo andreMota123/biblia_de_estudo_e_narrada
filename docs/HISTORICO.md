@@ -48,6 +48,12 @@ pessoal de leitura e estudo com a Bíblia narrada. Trabalho de 27/09/2026.
 - A página só é desenhada depois de hidratada, porque quase todo o estado
   inicial vem do `localStorage` (evita diferenças entre servidor e navegador).
 - "Olhinho" para mostrar a senha no login; saudação com o nome do leitor.
+- Botão **"Aa"** na leitura: tamanho da letra de 14 a 30 px (A−, A+ e
+  controle deslizante) e 7 fontes — Padrão, Literata, Merriweather, Lora,
+  EB Garamond, Atkinson Hyperlegible e sem serifa —, cada uma mostrada com
+  uma amostra. Vale para os versículos, o interlinear e o comentário, e fica
+  salvo no aparelho. As fontes vêm do Google Fonts via `next/font`, baixadas no
+  build e servidas pelo próprio app (só a escolhida é carregada).
 
 ## 4. Comentário de Matthew Henry em português, sem API
 

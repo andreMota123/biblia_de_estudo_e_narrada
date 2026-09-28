@@ -41,6 +41,7 @@ import {
 } from "./lib/userDataStore";
 import { useBibleAudio, type AudioPosition } from "./lib/useBibleAudio";
 import AudioPlayer from "./components/AudioPlayer";
+import { loadReadingSettings, saveReadingSettings, type ReadingSettings } from "./lib/readingFonts";
 
 const LAST_READ_KEY = "biblia-origens-ultima-leitura";
 
@@ -86,6 +87,10 @@ export default function BibliaOrigensApp() {
   }, [theme]);
 
   const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
+
+  // Tamanho e fonte da letra da leitura (botão "Aa"), guardados no navegador.
+  const [reading, setReading] = useState<ReadingSettings>(loadReadingSettings);
+  useEffect(() => saveReadingSettings(reading), [reading]);
 
   // Reabre no último capítulo lido.
   const [selectedBook, setSelectedBook] = useState<string>(() => {
@@ -515,6 +520,8 @@ export default function BibliaOrigensApp() {
             saveWordNote={saveWordNote}
             audioVerse={audioVerse}
             onListenFrom={listenFrom}
+            reading={reading}
+            onReadingChange={setReading}
           />
         )}
 

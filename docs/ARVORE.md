@@ -10,7 +10,8 @@ biblia_de_estudo_e_narrada/
 ├── app/                              aplicação Next.js 16 (App Router), tudo client-side numa página só
 │   ├── page.tsx                      estado central: livro/capítulo, login, anotações, busca — e ★ o player
 │   │                                 da narração, ★ o "modo local" sem Supabase e ★ "continuar de onde parou"
-│   ├── layout.tsx                    <html>, tema claro/escuro, ★ metadados de app instalável
+│   ├── layout.tsx                    <html>, tema claro/escuro, ★ metadados de app instalável, ★ fontes de
+│   │                                 leitura (next/font: Literata, Merriweather, Lora, EB Garamond, Atkinson)
 │   ├── manifest.ts                 ★ manifesto PWA (instalar na tela inicial do celular)
 │   ├── apple-icon.png              ★ ícone do iPhone (o Álef א)
 │   ├── globals.css                   cores do tema (variáveis CSS) e animações
@@ -23,7 +24,7 @@ biblia_de_estudo_e_narrada/
 │   │   ├── ReadView.tsx              leitura: versículos, interlinear hebraico/grego, painéis de contexto,
 │   │   │                             estudo, referências, palavra original e comentário — ★ "Ouvir capítulo",
 │   │   │                             ★ "Ouvir daqui", ★ destaque/rolagem do versículo narrado, ★ aviso de
-│   │   │                             tradução automática e "ver o original em inglês"
+│   │   │                             tradução automática e "ver o original em inglês", ★ botão "Aa" (tamanho e fonte da letra)
 │   │   ├── AudioPlayer.tsx         ★ barra do player: anterior/tocar/próximo, velocidade, timer de dormir,
 │   │   │                             continuar no próximo capítulo
 │   │   ├── StudyEditor.tsx           editor em blocos do caderno de estudo
@@ -35,6 +36,7 @@ biblia_de_estudo_e_narrada/
 │   │   └── AuthNotice.tsx            aviso "faça login para…"
 │   │
 │   ├── lib/
+│   │   ├── readingFonts.ts         ★ tamanho e fonte da letra da leitura (7 fontes, 14–30 px)
 │   │   ├── useBibleAudio.ts        ★ o motor da narração: toca o MP3 do capítulo, lê o JSON de tempos para
 │   │   │                             saber o versículo atual, pula versículos, avança capítulos, controles da
 │   │   │                             tela bloqueada (Media Session), lembra a posição
@@ -137,4 +139,4 @@ ReadView  "Ouvir capítulo" ──▶ page.tsx: audio.play({livro, cap, vers})
 | Narração | `public/narracao/` → volume `/opt/biblia/narracao` | `scripts/gerar-narracao.py` |
 | Comentário (EN + PT) | `public/commentary/` → volume `/opt/biblia/comentario` | `scripts/traduzir-comentario.py` |
 | Favoritos, destaques, estudos, notas | Supabase: `biblia_verse_notes`, `biblia_word_notes` | o app, por usuário (RLS) |
-| Posição de leitura e de áudio, tema, velocidade | `localStorage` do navegador | o app |
+| Posição de leitura e de áudio, tema, velocidade, tamanho e fonte da letra | `localStorage` do navegador | o app |

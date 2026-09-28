@@ -30,6 +30,7 @@ o mapa de todos os arquivos, em [`docs/ARVORE.md`](docs/ARVORE.md).
   dormir, continuação automática de capítulo e controles na tela bloqueada.
 - **Comentário de Matthew Henry em português**, traduzido uma única vez com IA
   local, sem API paga, com opção de ver o original em inglês.
+- **Tamanho e fonte da letra** ajustáveis (14–30 px, 7 fontes de leitura).
 - **Modo local** (funciona sem Supabase), "continuar de onde parou", app
   instalável no celular (PWA).
 - **Implantação numa VPS** com Docker Swarm + Traefik, ao lado de outros

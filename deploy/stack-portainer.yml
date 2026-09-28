@@ -10,7 +10,7 @@ version: "3.8"
 
 services:
   app:
-    image: biblia-origens:3
+    image: biblia-origens:4
     volumes:
       - /opt/biblia/narracao:/app/public/narracao:ro
       - /opt/biblia/comentario:/app/public/commentary/matthew-henry:ro
