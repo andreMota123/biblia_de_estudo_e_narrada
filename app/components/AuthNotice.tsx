@@ -5,7 +5,7 @@ type AuthNoticeProps = {
 
 export default function AuthNotice({ message, onGoToLogin }: AuthNoticeProps) {
   return (
-    <div className="fixed bottom-5 right-5 z-50 bg-[var(--bg-elevated)] text-[var(--text)] border border-[var(--accent)]/60 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 max-w-md animate-bounce">
+    <div className="fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom))] right-5 z-50 bg-[var(--bg-elevated)] text-[var(--text)] border border-[var(--accent)]/60 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 max-w-md animate-bounce">
       <div className="text-amber-400">⚠️</div>
       <div className="flex-1 text-xs">
         <p className="font-semibold">{message}</p>

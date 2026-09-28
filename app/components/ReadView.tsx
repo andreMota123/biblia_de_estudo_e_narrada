@@ -916,8 +916,8 @@ export default function ReadView({
           <aside
             className={
               activeSidePanel === "word"
-                ? "fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
-                : "fixed md:static inset-x-0 bottom-0 md:inset-auto top-16 md:top-auto z-50 md:z-auto w-full md:w-80 lg:w-96 max-h-[85vh] md:max-h-none border-t md:border-t-0 md:border-l border-[var(--border)] bg-[var(--bg-panel)]/80 backdrop-blur-2xl p-4 pb-8 md:pb-4 overflow-y-auto shrink-0 rounded-t-2xl md:rounded-none shadow-2xl md:shadow-none"
+                ? "fixed inset-0 z-50 flex items-center justify-center p-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(1rem+env(safe-area-inset-bottom))] pointer-events-none"
+                : "fixed md:static inset-x-0 bottom-0 md:inset-auto top-[calc(4rem+env(safe-area-inset-top))] md:top-auto z-50 md:z-auto w-full md:w-80 lg:w-96 max-h-[85vh] md:max-h-none border-t md:border-t-0 md:border-l border-[var(--border)] bg-[var(--bg-panel)]/80 backdrop-blur-2xl p-4 pb-[calc(2rem+env(safe-area-inset-bottom))] md:pb-4 overflow-y-auto shrink-0 rounded-t-2xl md:rounded-none shadow-2xl md:shadow-none"
             }
           >
             {activeSidePanel === "word" ? (

@@ -416,18 +416,18 @@ export default function BibliaOrigensApp() {
   }, [selectedBook, selectedChapter, selectedVerse, lexiconTick, typedBibleData]);
 
   if (!hydrated) {
-    return <div className="h-screen w-screen bg-[var(--bg)]" />;
+    return <div className="h-dvh w-screen bg-[var(--bg)]" />;
   }
 
   return (
-    <div className="h-screen w-screen bg-[var(--bg)] text-[var(--text)] font-sans flex flex-col overflow-hidden">
+    <div className="h-dvh w-screen bg-[var(--bg)] text-[var(--text)] font-sans flex flex-col overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
 
       {authNotice && (
         <AuthNotice message={authNotice} onGoToLogin={() => setActiveTab("home")} />
       )}
 
       {!user && (
-        <div className="fixed top-4 right-4 z-30 flex items-center bg-[var(--bg-elevated)] rounded-full p-0.5 border border-[var(--border)]">
+        <div className="fixed top-[calc(1rem+env(safe-area-inset-top))] right-4 z-30 flex items-center bg-[var(--bg-elevated)] rounded-full p-0.5 border border-[var(--border)]">
           <button
             onClick={() => theme !== "light" && toggleTheme()}
             className={`p-1.5 rounded-full transition-colors ${theme === "light" ? "bg-[var(--bg)] text-[var(--text)] shadow-sm" : "text-[var(--text-muted)]"}`}

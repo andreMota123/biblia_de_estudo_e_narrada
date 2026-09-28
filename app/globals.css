@@ -61,7 +61,17 @@
   --font-mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
 }
 
+/* O app ocupa exatamente a tela e rola só por dentro (lista de versículos,
+   painéis). Sem isso, no iPhone a página inteira "escorrega" ao puxar e o topo
+   some por baixo da barra de status. */
+html,
 body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  overflow: hidden;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
